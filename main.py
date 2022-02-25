@@ -1,6 +1,8 @@
 from random import randrange
 import pygame
 
+pygame.init()
+
 WIDTH, HEIGHT = 1000, 1000
 PIECEWIDTH = 50
 PIECEHEIGHT = 50
@@ -19,6 +21,9 @@ apple_position = [0, 0]
 APPLE_COLOR = (227, 69, 34)
 
 FPS = 15
+
+game_over = False
+font = pygame.font.Font('freesansbold.ttf', 32)
 
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake | Robin Aerts")
@@ -47,13 +52,13 @@ def draw_snake():
         snake_position[1] -= 1
         if snake_position[1] < 0:
             snake_position[1] = 20
-    prev_positions.append(snake_position)
+    # if prev_positions[-1] != snake_position:
+    prev_positions.append(snake_position.copy())
     if snake_length <= len(prev_positions):
-        prev_positions.pop(0)
-        print(prev_positions)
+        del prev_positions[0]
+    # print(prev_positions)
     if snake_length > 1:
         for x in range(1, snake_length):
-            print(-x)
             position_x = prev_positions[-x][0]
             position_y = prev_positions[-x][1]
             segment = pygame.Rect(position_x * PIECEWIDTH, position_y * PIECEHEIGHT,
@@ -88,6 +93,15 @@ def draw_canvas():
     pygame.display.update()
 
 
+def game_over_screen():
+    WIN.fill(BGCOLOR)
+    text = font.render("Game Over: Score " + str(snake_length), False, WHITE)
+    textRect = text.get_rect()
+    textRect.center = (WIDTH//2, HEIGHT//2)
+    WIN.blit(text, textRect)
+    pygame.display.update()
+
+
 def snake_movement(keys_pressed):
     global snake_direction
     if keys_pressed[pygame.K_LEFT]:
@@ -101,10 +115,26 @@ def snake_movement(keys_pressed):
 
 
 def check_apple_snake():
-    global snake_length, is_apple
-    if (apple_position == snake_position):
+    global snake_length, is_apple, game_over
+    if apple_position == snake_position:
         snake_length += 1
         is_apple = False
+    prev_positions_copy = prev_positions.copy()
+    if (len(prev_positions) > 1):
+        del prev_positions_copy[-1]
+        if (snake_position in prev_positions_copy):
+            game_over = True
+
+
+def restart_game():
+    global snake_position, snake_length, snake_direction, prev_positions, is_apple, apple_position, game_over
+    snake_position = [2, 9]
+    snake_length = 1
+    snake_direction = "right"
+    prev_positions = []
+    is_apple = False
+    apple_position = [0, 0]
+    game_over = False
 
 
 def main():
@@ -116,10 +146,15 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-        keys_pressed = pygame.key.get_pressed()
-        snake_movement(keys_pressed)
-        draw_canvas()
-        check_apple_snake()
+            keys_pressed = pygame.key.get_pressed()
+            if keys_pressed[pygame.K_r]:
+                restart_game()
+        if not game_over:
+            snake_movement(keys_pressed)
+            draw_canvas()
+            check_apple_snake()
+        else:
+            game_over_screen()
     pygame.quit()
 
 
